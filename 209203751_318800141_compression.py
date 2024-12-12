@@ -6,8 +6,8 @@ import heapq
 class Node:
     ID = 0
     def __init__(self, symbol=None, instance=1,left=None,right=None):
-        self.symbol = symbol
-        self.instance = instance
+        self.symbol = symbol #Symbol e.g 'A', '$' ...
+        self.instance = instance #Number instances of Symbol 
         self.id = Node.ID
         self.left = left
         self.right = right
@@ -24,13 +24,16 @@ class Node:
         return f"{self.code}"
     
     def increment_instance(self):
+        """Increment instance by 1 """
         self.instance += 1
 
     def is_Node_is_symbol(self):
+        """Check if Node contain a symbol char, thos nodes are the leaf"""
         res = True if self.symbol != None else False
         return res
     
     def extend_encoding(self,code):
+        """add 0 or 1 to encoding according to tree"""
         if self.code:
             self.code += code
         else:
@@ -54,7 +57,9 @@ except FileNotFoundError:
 symbol_dict = {}
 
 #Count the instance of each Node
-data = "abbcccddddeeeee"
+data = "abbcccddddeeeee" #override the data to check quickly the code
+
+#make a dictionary of nodes e.g {"a":<node contain 'a', ...}
 for char in data:
     if char.isdigit():
         continue
@@ -64,7 +69,7 @@ for char in data:
         symbol_dict[char].increment_instance()
 print(symbol_dict)
 
-#Make Node heap
+#Make Node heap as shown in the lecture
 Node_heap = []
 for node in symbol_dict.values():
     heapq.heappush(Node_heap,node)
@@ -96,22 +101,29 @@ def encode_nodes(root,code):
 
 encode_nodes(root,"")
 print(symbol_dict) 
-encoded_data_str =""
+encoded_data_str ="" #Encoded data, a sequence of 0 and 1 
 encodede_text = ""
 for char in data:
     encoded_data_str += symbol_dict[char].code
+#encoded_data_str += "11111111"
 i=0
+print(encoded_data_str)
+size_encoded_data = len(encoded_data_str)
 for i in range(0,len(encoded_data_str),8):
     
-    if len(encoded_data_str) < 8 :#edge
-        char = encoded_data_str + "".join(["0" for i in range(8-  encoded_data_str)])
+    if size_encoded_data < 8 or i + 8 >= size_encoded_data:#edge cases
+        char = encoded_data_str[i:] + "".join(["0" for i in range(8 -  len(encoded_data_str))])
         decimal_value = int(char, 2)
         character = chr(decimal_value)
+        encodede_text += character
         break
     
-    if i + 8 < len(encoded_data_str):#edge
-        pass
+        
     char = encoded_data_str[i:i + 8]
     decimal_value = int(char, 2)
-    character = chr(decimal_value)    
-    print(encoded_data_str)       
+    character = chr(decimal_value)
+    print(character)    
+    encodede_text += character      
+
+print(encodede_text) 
+    
