@@ -110,20 +110,27 @@ i=0
 print(encoded_data_str)
 size_encoded_data = len(encoded_data_str)
 for i in range(0,len(encoded_data_str),8):
-    
-    if size_encoded_data < 8 or i + 8 >= size_encoded_data:#edge cases
-        char = encoded_data_str[i:] + "".join(["0" for i in range(8 -  len(encoded_data_str))])
+   
+    if (len(encoded_data_str)<8) or ((i+8) > len(encoded_data_str)) :#edge
+        char = encoded_data_str[i:]
+        buffering= 8 - len(char)
+        char += "0"*(8- len(char))
         decimal_value = int(char, 2)
         character = chr(decimal_value)
         encodede_text += character
+        print(character)
+
         break
-    
-        
-    char = encoded_data_str[i:i + 8]
-    decimal_value = int(char, 2)
-    character = chr(decimal_value)
-    print(character)    
-    encodede_text += character      
+   
+    if (i + 8) < len(encoded_data_str):#edge
+        #pass
+        char = encoded_data_str[i:i + 8]
+        decimal_value = int(char, 2)
+        character = chr(decimal_value)  
+        encodede_text += character
+
+        print(character)
+   
 
 print(encodede_text) 
     
