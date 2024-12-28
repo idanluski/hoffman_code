@@ -7,7 +7,7 @@ class Node:
         self.left = left
         self.right = right
         self.code = None
-        self.symbol = symbol if symbol else str(self.id)#Symbol e.g 'A', '$' ...
+        self.symbol = str(symbol) if symbol else str(self.id)#Symbol e.g 'A', '$' ...
         Node.ID += 1
 
     def __lt__(self, other):
