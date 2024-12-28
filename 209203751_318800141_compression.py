@@ -154,6 +154,8 @@ def decode_value_with_escape(encoded_char, reverse_mapping):
         return reverse_mapping[encoded_char]
     return ord(encoded_char)
 print(len(encoded_data_str))
+
+buffering=0
 for i in range(0,len(encoded_data_str),8):
    
     if (len(encoded_data_str)<8) or ((i+8) > len(encoded_data_str)) :#edge
