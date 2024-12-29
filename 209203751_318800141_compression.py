@@ -3,9 +3,10 @@ import os
 import heapq
 from Node import Node
 import Binary_tree
+import re
 
 # Default path
-default_path = 'harry_potter.txt'
+default_path = 'sample_text.txt'
 
 # Check if a file path is provided via an environment variable or prompt
 file_path = os.getenv('INPUT_FILE', default_path)
@@ -28,14 +29,14 @@ def prolematic_symbol(symbol):
 symbol_dict = {}
 
 #Count the instance of each Node
-data = "abbcccddddeeeee" #override the data to check quickly the code
+#data = "abbcccddddeeeee" #override the data to check quickly the code
 
 #make a dictionary of nodes e.g {"a":<node contain 'a', ...}
 for char in data:
     if char.isdigit():
         continue
     if char not in symbol_dict:
-        char = prolematic_symbol(char)
+        #char = prolematic_symbol(char)
         symbol_dict[char] = Node(char)
     else:
         symbol_dict[char].increment_instance()
@@ -90,80 +91,77 @@ print(symbol_dict)
 encoded_data_str ="" #Encoded data, a sequence of 0 and 1 
 encodede_text = ""
 for char in data:
-    char = prolematic_symbol(char)
+    #char = prolematic_symbol(char)
     encoded_data_str += symbol_dict[char].code
 #encoded_data_str += "11111111"
 i=0
 print(encoded_data_str)
 size_encoded_data = len(encoded_data_str)
 
-def create_mapping():
-    """
-    Create a mapping for characters with ASCII values outside the printable range (33-126).
-    Returns a dictionary for encoding and its reverse for decoding.
-    """
-    mapping = {}
-    escape_prefix = "\\e"  # Escape prefix
-    counter = 1  # Counter for unique escape sequences
 
-    # Map all ASCII values outside the printable range
-    for ascii_value in range(256):  # Full byte range
-        if ascii_value < 33 or ascii_value > 126:
-            mapping[ascii_value] = f"{escape_prefix}{counter}"
-            counter += 1
-
-    reverse_mapping = {v: k for k, v in mapping.items()}
-    return mapping, reverse_mapping
-
-map, reverse_map = create_mapping()
-
-SAFE_ASCII = ''.join(chr(i) for i in range(33, 127))  # Safe characters: '!' to '~'
-SAFE_ASCII_SIZE = len(SAFE_ASCII)  # 94 safe characters
-
-VALUE_TO_SAFE = {i: SAFE_ASCII[i] if i < SAFE_ASCII_SIZE else SAFE_ASCII[i % SAFE_ASCII_SIZE] + str(i // SAFE_ASCII_SIZE) for i in range(256)}
-SAFE_TO_VALUE = {v: k for k, v in VALUE_TO_SAFE.items()}
 
    
-def encode_value_with_escape(decimal_value, mapping):
+def encode_ascii_value(ascii_value):
     """
-    Encode a decimal value into a character or escape sequence.
-    
-    Args:
-        decimal_value (int): Decimal ASCII value to encode.
-        mapping (dict): Mapping of problematic characters to escape sequences.
-    
-    Returns:
-        str: Encoded character or escape sequence.
-    """
-    if decimal_value in mapping:
-        return mapping[decimal_value]
-    return chr(decimal_value)
+    Encodes a single ASCII value into a printable character or a mapped sequence.
 
-def decode_value_with_escape(encoded_char, reverse_mapping):
-    """
-    Decode a character or escape sequence back to its decimal value.
-    
     Args:
-        encoded_char (str): Encoded character or escape sequence.
-        reverse_mapping (dict): Reverse mapping of escape sequences to decimal values.
-    
+        ascii_value (int): The ASCII value to encode.
+
     Returns:
-        int: Decoded decimal ASCII value.
+        str: Encoded representation of the ASCII value.
     """
-    if encoded_char in reverse_mapping:
-        return reverse_mapping[encoded_char]
-    return ord(encoded_char)
+    if ascii_value == 92:  # ASCII for '\'
+        return "\\x5C"  # Explicitly encode backslash as '\x5C'
+    elif 32 <= ascii_value <= 126:  # Printable range
+        return chr(ascii_value)
+    else:
+        return f"\\x{ascii_value:02X}"  # Encode non-printable ASCII as '\xNN'
+
+def decode_ascii_text(encoded_text, padding_bits=0):
+    """
+    Decodes an encoded string into a binary representation, removing padding bits.
+
+    Args:
+        encoded_text (str): The encoded text to decode.
+        padding_bits (int): The number of padding bits to remove from the end.
+
+    Returns:
+        str: Decoded binary string with padding removed.
+    """
+    decoded_binary = []
+    i = 0
+
+    while i < len(encoded_text):
+        if encoded_text[i:i+2] == "\\x":  # Encoded non-printable ASCII
+            ascii_value = int(encoded_text[i+2:i+4], 16)  # Convert hex to int
+            decoded_binary.append(f"{ascii_value:08b}")  # Convert to binary
+            i += 4
+        else:  # Printable character
+            ascii_value = ord(encoded_text[i])
+            decoded_binary.append(f"{ascii_value:08b}")  # Convert to binary
+            i += 1
+
+    # Join all binary values into a single binary string
+    binary_string = ''.join(decoded_binary)
+
+    # Remove padding bits from the end
+    padding_bits_str = int(padding_bits)
+    if padding_bits_str > 0:
+        binary_string = binary_string[:-padding_bits_str]
+
+    return binary_string
+
 print(len(encoded_data_str))
-
-buffering=0
+buffering = len(encoded_data_str)%8
 for i in range(0,len(encoded_data_str),8):
    
-    if (len(encoded_data_str)<8) or ((i+8) > len(encoded_data_str)) :#edge
+    if (len(encoded_data_str)<8) or ((i+8) >= len(encoded_data_str)) :#edge
         char = encoded_data_str[i:]
         buffering= 8 - len(char)
         char += "0"*(buffering)
         decimal_value = int(char, 2)
-        character = encode_value_with_escape(decimal_value,map)
+        character = encode_ascii_value(decimal_value)
         encodede_text += character
         print(character)
 
@@ -173,8 +171,8 @@ for i in range(0,len(encoded_data_str),8):
         #pass
         char = encoded_data_str[i:i + 8]
         decimal_value = int(char, 2)
-        character = encode_value_with_escape(decimal_value,map)  
-        decode_char = decode_value_with_escape(character,reverse_map)
+        character = encode_ascii_value(decimal_value)  
+        #decode_char = decode_ascii_value(character)
         encodede_text += character
 
 encodede_text += "\n"+str(buffering)+"\n"+inorder+"\n"+postorder
@@ -197,10 +195,43 @@ def recreate_tree(inorder, postorder):
         BinaryTree: A binary tree constructed from the given traversals.
     """
     
-    def parse_traversal(traversal):
-        return traversal.rstrip(",").split(",")
-
+    def parse_traversal(s: str):
+        """
+        Splits `s` such that:
+        - Single comma => skip
+        - Multiple commas => ','
+        - Single *or multiple* spaces => ' '
+        - Everything else (letters, digits, backslashes, etc.) => keep as-is
+        """
+        # 1) Find all tokens that are either:
+        #    - runs of non-comma-space chars: [^, ]+
+        #    - runs of commas: ,+
+        #    - runs of spaces:  +
+        parts = re.findall(r'[^, ]+|,+| +', s)
+        
+        result = []
+        for part in parts:
+            # Is this `part` purely commas?
+            if all(ch == ',' for ch in part):
+                if len(part) == 1:
+                    # single comma => delimiter => skip
+                    continue
+                else:
+                    # multiple commas => add a single comma token
+                    result.append(',')
+            
+            # Is this `part` purely spaces?
+            elif all(ch == ' ' for ch in part):
+                # whether 1 space or multiple, we always add a single " "
+                result.append(' ')
+            
+            else:
+                # Everything else (letters, digits, backslashes, etc.)
+                result.append(part)
+        
+        return result
     inorder_list = parse_traversal(inorder)
+    print(len(inorder_list))
     postorder_list = parse_traversal(postorder)
 
     def build_tree(in_left, in_right):
@@ -222,7 +253,7 @@ def recreate_tree(inorder, postorder):
 
         return root
 
-    # Construct the tree
+#     # Construct the tree
     root = build_tree(0, len(inorder_list) - 1)
     restore_tree = Binary_tree.BinaryTree(root)
     restore_tree.encode_nodes()
@@ -232,8 +263,16 @@ def recreate_tree(inorder, postorder):
 
 assembled_tree = recreate_tree(inorder, postorder)
 byiary_tree.print_tree()
-print("---------------------------")
-assembled_tree.print_tree()
+#----------------------------------------------decompress check
+ls = encodede_text.split("\n")
+binary_text = decode_ascii_text(ls[0],buffering)
+print(binary_text)
+print(byiary_tree.encoded_dict)
+real_text = assembled_tree.decode_binary_string(binary_text)
+print(real_text)
+
+# print("---------------------------")
+# assembled_tree.print_tree()
 
 
 

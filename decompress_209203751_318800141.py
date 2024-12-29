@@ -5,30 +5,7 @@ import os
 import re
 
 
-SAFE_ASCII = ''.join(chr(i) for i in range(33, 127))  # '!' to '~'
-SAFE_ASCII_SIZE = len(SAFE_ASCII)  # 94 characters
 
-# Map values to safe ASCII characters
-VALUE_TO_SAFE = {i: SAFE_ASCII[i % SAFE_ASCII_SIZE] for i in range(256)}
-SAFE_TO_VALUE = {v: k for k, v in VALUE_TO_SAFE.items()}
-
-def create_mapping():
-    """
-    Create a mapping for characters with ASCII values outside the printable range (33-126).
-    Returns a dictionary for encoding and its reverse for decoding.
-    """
-    mapping = {}
-    escape_prefix = "\\e"  # Escape prefix
-    counter = 1  # Counter for unique escape sequences
-
-    # Map all ASCII values outside the printable range
-    for ascii_value in range(256):  # Full byte range
-        if ascii_value < 33 or ascii_value > 126:
-            mapping[ascii_value] = f"{escape_prefix}{counter}"
-            counter += 1
-
-    reverse_mapping = {v: k for k, v in mapping.items()}
-    return mapping, reverse_mapping
 
 
 
@@ -61,10 +38,47 @@ def recreate_tree(inorder, postorder):
         BinaryTree: A binary tree constructed from the given traversals.
     """
     
-    def parse_traversal(traversal):
-        return traversal.rstrip(",").split(",")
+    def parse_traversal(s: str):
+        """
+        Splits `s` such that:
+        - Single comma => skip
+        - Multiple commas => ','
+        - Single *or multiple* spaces => ' '
+        - Everything else (letters, digits, backslashes, etc.) => keep as-is
+        """
+        # 1) Find all tokens that are either:
+        #    - runs of non-comma-space chars: [^, ]+
+        #    - runs of commas: ,+
+        #    - runs of spaces:  +
+        parts = re.findall(r'[^, ]+|,+| +', s)
+        
+        result = []
+        for part in parts:
+            # Is this `part` purely commas?
+            if all(ch == ',' for ch in part):
+                if len(part) == 1:
+                    # single comma => delimiter => skip
+                    continue
+                else:
+                    # multiple commas => add a single comma token
+                    result.append(',')
+            
+            # Is this `part` purely spaces?
+            elif all(ch == ' ' for ch in part):
+                # whether 1 space or multiple, we always add a single " "
+                result.append(' ')
+            
+            else:
+                # Everything else (letters, digits, backslashes, etc.)
+                result.append(part)
+        
+        return result
+           
+
+
 
     inorder_list = parse_traversal(inorder)
+    print(len(inorder_list))
     postorder_list = parse_traversal(postorder)
 
     def build_tree(in_left, in_right):
@@ -104,7 +118,7 @@ def retrieve_file_content(file_path):
         dict: A dictionary containing `content`, `postorder`, and `inorder` data.
     """
     try:
-        with open(file_path, "r") as file:
+        with open(file_path, "r",encoding='utf-8') as file:
             lines = file.readlines()
             print(lines[1][0])
         
@@ -112,10 +126,10 @@ def retrieve_file_content(file_path):
             raise ValueError("File does not contain the expected 3 lines.")
         
         return {
-            "content": lines[0].strip(),
-            "padding":lines[1][0].strip(),
-            "postorder": lines[2].strip(),
-            "inorder": lines[3].strip()
+            "content": lines[0].rstrip(),
+            "padding":lines[1][0].rstrip(),
+            "inorder": lines[2].rstrip(),
+            "postorder": lines[3].rstrip(),
         }
     except Exception as e:
         raise RuntimeError(f"Error reading file '{file_path}': {e}")
@@ -136,35 +150,43 @@ def retrieve_file_content(file_path):
 #             i += 1
 #     return decoded_binary
 
-def decode_text(encoded_text, reverse_mapping):
+
+def decode_ascii_text(encoded_text, padding_bits=0):
     """
-    Decode text with escape sequences back to binary.
-    
+    Decodes an encoded string into a binary representation, removing padding bits.
+
     Args:
-        encoded_text (str): Encoded string with escape sequences.
-        reverse_mapping (dict): Reverse mapping of escape sequences to decimal values.
-    
+        encoded_text (str): The encoded text to decode.
+        padding_bits (int): The number of padding bits to remove from the end.
+
     Returns:
-        str: Decoded binary string.
+        str: Decoded binary string with padding removed.
     """
-    decoded_binary = ""
+    decoded_binary = []
     i = 0
+
     while i < len(encoded_text):
-        if encoded_text[i:i+2] == "\\e":  # Check for escape sequence
-            # Match the escape sequence pattern
-            match = re.match(r"\\e\d+", encoded_text[i:])
-            if match:
-                escape_seq = match.group(0)
-                decimal_value = decode_value_with_escape(escape_seq, reverse_mapping)
-                decoded_binary += format(decimal_value, '08b')
-                i += len(escape_seq)  # Move the pointer past the escape sequence
-            else:
-                raise ValueError(f"Invalid escape sequence at position {i}")
-        else:
-            decimal_value = decode_value_with_escape(encoded_text[i], reverse_mapping)
-            decoded_binary += format(decimal_value, '08b')
+        if encoded_text[i:i+2] == "\\x":  # Encoded non-printable ASCII
+            ascii_value = int(encoded_text[i+2:i+4], 16)  # Convert hex to int
+            decoded_binary.append(f"{ascii_value:08b}")  # Convert to binary
+            i += 4
+        else:  # Printable character
+            ascii_value = ord(encoded_text[i])
+            decoded_binary.append(f"{ascii_value:08b}")  # Convert to binary
             i += 1
-    return decoded_binary
+
+    # Join all binary values into a single binary string
+    binary_string = ''.join(decoded_binary)
+
+    # Remove padding bits from the end
+    padding_bits_str = int(padding_bits)
+    if padding_bits_str > 0:
+        binary_string = binary_string[:-padding_bits_str]
+
+    return binary_string
+
+
+
 
 def main():
     # Create an argument parser
@@ -202,11 +224,14 @@ def main():
         print(f"3. Postorder: {data['postorder']}")
         print(f"4. Inorder: {data['inorder']}")
 
-        restore_tree = recreate_tree(data['postorder'],data['inorder'])
+        restore_tree = recreate_tree(data['inorder'],data['postorder'])
         restore_tree.print_tree()
-        map, reverse_map = create_mapping()
-        binary_text = decode_text(data["content"],reverse_map)
-        real_text = restore_tree.decompression(binary_text)
+        binary_text = decode_ascii_text(data["content"],data["padding"])
+        print("Compressed")
+        print (binary_text)
+        print(restore_tree.encoded_dict)
+        real_text = restore_tree.decode_binary_string(binary_text)
+        print(real_text)
 
 
         

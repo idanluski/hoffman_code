@@ -8,7 +8,7 @@ class BinaryTree():
         self.encoded_dict = {}
         self.decoded_text = ""
 
-
+    
     def postorder_traversals(self, node):
         
         postorder = ""
@@ -113,21 +113,47 @@ class BinaryTree():
             self.encode_nodes(root.left, root.code + "0")
 
 
-    def decompression(self, text):
-        if len(text) <= 0:
-            return
-        i = 0
-        value = 0
-        real_text = ""
-        while i < len(text):
-            while not(text[:i] in self.encoded_dict.values()):
-                i += 1
-                value = text[:i]
-            for key in self.encoded_dict.keys():
-                if value == self.encoded_dict[key]:
-                    char = key
-                    real_text += char
-            #need to think the case of last character        
-        return real_text
+    def decode_binary_string(self, binary_string):
+        """
+        Decodes a binary string using a dictionary that maps characters to binary sequences.
+
+        Args:
+            binary_string (str): The binary string to decode.
+
+
+        Returns:
+            str: The decoded text.
+        """
+        # Reverse the dictionary to map binary sequences to their corresponding characters
+        reversed_dict = {value: key for key, value in self.encoded_dict.items()}
+        
+        decoded_text = ""
+        current_sequence = ""
+        
+        for bit in binary_string:
+            current_sequence += bit  # Build the current binary sequence
+            
+            if current_sequence in reversed_dict:  # Check if it matches any sequence in the dictionary
+                char = reversed_dict[current_sequence]  # Append the corresponding character
+                if str(char) == "\\n":
+                    char = '\n' 
+                elif str(char) == "\\'":
+                    char = "\'" 
+                elif str(char) == "\\r":
+                    char = "\r" 
+                elif str(char) == "\\t":
+                    char = "\t" 
+                elif str(char) == "\\b":
+                    char = "\b" 
+                elif str(char) == "\\f":
+                    char = "\f" 
+                elif str(char) == "\\a":
+                    char = '\a' 
+                elif str(char) == "\\v":
+                    char += "\v" 
+                decoded_text += char
+                current_sequence = ""  # Reset the current sequence for the next match
+        
+        return decoded_text
    
       
