@@ -5,12 +5,42 @@ from Node import Node
 import Binary_tree
 import re
 import base64
+import argparse
+
 
 # Default path
 default_path = 'sample_text.txt'
 
 # Check if a file path is provided via an environment variable or prompt
 file_path = os.getenv('INPUT_FILE', default_path)
+
+# Create an argument parser
+parser = argparse.ArgumentParser(description="Retrieve and split content from a file.")
+
+# Add an argument for the file path
+parser.add_argument(
+    "path",
+    type=str,
+    help="The path to the file to retrieve content from"
+)
+
+# Parse the arguments
+args = parser.parse_args()
+
+# Get the path from the arguments
+input_path = args.path
+
+# Validate the path
+if not os.path.exists(input_path):
+    print(f"Error: The path '{input_path}' does not exist.")
+
+
+if not os.path.isfile(input_path):
+    print(f"Error: The path '{input_path}' is not a file.")
+
+
+    #Retrieve and process the content of the file
+
 
 try:
     with open(file_path, 'r') as file:
@@ -41,7 +71,7 @@ for char in data:
         symbol_dict[char] = Node(char)
     else:
         symbol_dict[char].increment_instance()
-print(symbol_dict)
+#print(symbol_dict)
 
 #Make Node heap as shown in the lecture
 Node_heap = []
@@ -79,16 +109,16 @@ def write_to_compressed_file(data):
 root = build_tree(Node_heap) #return the tree of su, of each node
 byiary_tree= Binary_tree.BinaryTree(root)
 inorder = byiary_tree.inorder_traversals(root)
-print(inorder)
+#print(inorder)
  
 postorder = byiary_tree.postorder_traversals(root)
-print(postorder)
+#print(postorder)
 
    
 
 #[{symbol,code,},]
 byiary_tree.encode_nodes()
-print(symbol_dict) 
+#print(symbol_dict) 
 encoded_data_str ="" #Encoded data, a sequence of 0 and 1 
 encodede_text = ""
 for char in data:
@@ -96,7 +126,6 @@ for char in data:
     encoded_data_str += symbol_dict[char].code
 #encoded_data_str += "11111111"
 i=0
-print(encoded_data_str)
 size_encoded_data = len(encoded_data_str)
 
 
@@ -123,9 +152,9 @@ def encode_base64(data: bytes) -> str:
 
 encoded_data_str_length = len(encoded_data_str)
 packed = pack_bits_into_bytes(encoded_data_str)
-print(len(encoded_data_str))
+#print(len(encoded_data_str))
 encoded_b64 = encode_base64(packed)
-print("Base64 encoded:", encoded_b64)
+#print("Base64 encoded:", encoded_b64)
 buffering = len(encoded_data_str)%8
 
 encoded_text_with_64 =encoded_b64 + "\n"+str(encoded_data_str_length)+"\n"+inorder+"\n"+postorder
@@ -213,8 +242,8 @@ def recreate_tree(inorder, postorder):
     # Create a BinaryTree instance and return it
     return restore_tree
 
-assembled_tree = recreate_tree(inorder, postorder)
-byiary_tree.print_tree()
+# assembled_tree = recreate_tree(inorder, postorder)
+# byiary_tree.print_tree()
 #----------------------------------------------decompress check
 # ls = encodede_text.split("\n")
 # binary_text = decode_ascii_text(ls[0],buffering)

@@ -7,8 +7,23 @@ import base64
 
 
 
+filename = "209203751_318800141_decompressed.txt"
 
+def write_to_file(filename: str, data: str):
+    """
+    Write a string to a new file.
 
+    Args:
+        filename (str): Name of the file to write to.
+        data (str): The string data to write into the file.
+    """
+    try:
+        # Open the file in write mode (creates a new file if it doesn't exist)
+        with open(filename, 'w', encoding='utf-8') as file:
+            file.write(data)
+        print(f"Data successfully written to {filename}.")
+    except Exception as e:
+        print(f"An error occurred while writing to the file: {e}")
 
 
 def decode_value_with_escape(encoded_char, reverse_mapping):
@@ -164,23 +179,22 @@ def main():
     )
     
     # Parse the arguments
-    #args = parser.parse_args()
+    args = parser.parse_args()
     
     # Get the path from the arguments
-   # input_path = args.path
+    input_path = args.path
     
     # Validate the path
-    # if not os.path.exists(input_path):
-    #     print(f"Error: The path '{input_path}' does not exist.")
-    #     return
+    if not os.path.exists(input_path):
+        print(f"Error: The path '{input_path}' does not exist.")
+        return
     
-    # if not os.path.isfile(input_path):
-    #     print(f"Error: The path '{input_path}' is not a file.")
-    #     return
+    if not os.path.isfile(input_path):
+        print(f"Error: The path '{input_path}' is not a file.")
+        return
     
-    # Retrieve and process the content of the file
+    #Retrieve and process the content of the file
     try:
-        input_path =r"/Users/iluski/Desktop/Hoffman_code/compressed_data.txt" #TODO remove this in the end!!!
         data = retrieve_file_content(input_path)
         print(f"Content of the file '{input_path}':")
         print(f"1. Content: {data['content']}")
@@ -196,7 +210,7 @@ def main():
         unpacked_bits = unpack_bytes_to_bits(decoded_b64, data["padding"])
         print("Unpacked bits:", unpacked_bits)
         real_text = restore_tree.decode_binary_string(unpacked_bits)
-        print(real_text)
+        write_to_file(filename=filename,data=real_text)
 
  
 
