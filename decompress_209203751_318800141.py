@@ -3,6 +3,7 @@ import Binary_tree
 import argparse
 import os
 import re
+import base64
 
 
 
@@ -127,66 +128,29 @@ def retrieve_file_content(file_path):
         
         return {
             "content": lines[0].rstrip(),
-            "padding":lines[1][0].rstrip(),
+            "padding":lines[1].rstrip(),
             "inorder": lines[2].rstrip(),
             "postorder": lines[3].rstrip(),
         }
     except Exception as e:
         raise RuntimeError(f"Error reading file '{file_path}': {e}")
 
-# def decode_to_binary(encoded_text,reverse_mapping):
-#     decoded_binary = ""
-#     i = 0
-#     while i < len(encoded_text):
-#         if encoded_text[i:i+2] == "\\e":  # Check for escape sequence
-#             # Find the full escape sequence
-#             escape_seq = encoded_text[i:encoded_text.index("\\", i + 2) + 2]
-#             decimal_value = decode_value_with_escape(escape_seq, reverse_mapping)
-#             decoded_binary += format(decimal_value, '08b')
-#             i += len(escape_seq)  # Skip escape sequence
-#         else:
-#             decimal_value = decode_value_with_escape(encoded_text[i], reverse_mapping)
-#             decoded_binary += format(decimal_value, '08b')
-#             i += 1
-#     return decoded_binary
+def decode_base64(encoded_str: str) -> bytes:
+    return base64.b64decode(encoded_str)
 
-
-def decode_ascii_text(encoded_text, padding_bits=0):
+def unpack_bytes_to_bits(data: bytes, real_bit_length: str) -> str:
     """
-    Decodes an encoded string into a binary representation, removing padding bits.
-
-    Args:
-        encoded_text (str): The encoded text to decode.
-        padding_bits (int): The number of padding bits to remove from the end.
-
-    Returns:
-        str: Decoded binary string with padding removed.
+    Convert a bytes object back to a bitstring of length real_bit_length.
+    We assume the original bitstring length is known (stored) as real_bit_length.
     """
-    decoded_binary = []
-    i = 0
+    real_bit_length = int(real_bit_length)
+    bitstring = ""
+    for b in data:
+        # Format each byte as 8 bits: e.g. 197 -> '11000101'
+        bitstring += f"{b:08b}"
 
-    while i < len(encoded_text):
-        if encoded_text[i:i+2] == "\\x":  # Encoded non-printable ASCII
-            ascii_value = int(encoded_text[i+2:i+4], 16)  # Convert hex to int
-            decoded_binary.append(f"{ascii_value:08b}")  # Convert to binary
-            i += 4
-        else:  # Printable character
-            ascii_value = ord(encoded_text[i])
-            decoded_binary.append(f"{ascii_value:08b}")  # Convert to binary
-            i += 1
-
-    # Join all binary values into a single binary string
-    binary_string = ''.join(decoded_binary)
-
-    # Remove padding bits from the end
-    padding_bits_str = int(padding_bits)
-    if padding_bits_str > 0:
-        binary_string = binary_string[:-padding_bits_str]
-
-    return binary_string
-
-
-
+    # Slice off any padding bits
+    return bitstring[:real_bit_length]
 
 def main():
     # Create an argument parser
@@ -226,12 +190,15 @@ def main():
 
         restore_tree = recreate_tree(data['inorder'],data['postorder'])
         restore_tree.print_tree()
-        binary_text = decode_ascii_text(data["content"],data["padding"])
-        print("Compressed")
-        print (binary_text)
-        print(restore_tree.encoded_dict)
-        real_text = restore_tree.decode_binary_string(binary_text)
+
+
+        decoded_b64 = decode_base64(data["content"])
+        unpacked_bits = unpack_bytes_to_bits(decoded_b64, data["padding"])
+        print("Unpacked bits:", unpacked_bits)
+        real_text = restore_tree.decode_binary_string(unpacked_bits)
         print(real_text)
+
+ 
 
 
         

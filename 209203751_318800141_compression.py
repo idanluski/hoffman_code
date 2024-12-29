@@ -4,6 +4,7 @@ import heapq
 from Node import Node
 import Binary_tree
 import re
+import base64
 
 # Default path
 default_path = 'sample_text.txt'
@@ -99,87 +100,38 @@ print(encoded_data_str)
 size_encoded_data = len(encoded_data_str)
 
 
+def pack_bits_into_bytes(bitstring: str) -> bytes:
+    """
+    Convert a string of '0'/'1' characters into a bytes object.
+    Pads the bitstring if it's not a multiple of 8 in length.
+    """
+    # Pad with zeros so length is multiple of 8
+    padding_needed = (8 - (len(bitstring) % 8)) % 8
+    bitstring_padded = bitstring + ('0' * padding_needed)
 
+    # Each chunk of 8 bits -> one byte
+    byte_array = bytearray()
+    for i in range(0, len(bitstring_padded), 8):
+        chunk = bitstring_padded[i:i+8]
+        byte_val = int(chunk, 2)  # interpret as base-2
+        byte_array.append(byte_val)
+
+    return bytes(byte_array)
    
-def encode_ascii_value(ascii_value):
-    """
-    Encodes a single ASCII value into a printable character or a mapped sequence.
+def encode_base64(data: bytes) -> str:
+    return base64.b64encode(data).decode('ascii')  # get a str back
 
-    Args:
-        ascii_value (int): The ASCII value to encode.
-
-    Returns:
-        str: Encoded representation of the ASCII value.
-    """
-    if ascii_value == 92:  # ASCII for '\'
-        return "\\x5C"  # Explicitly encode backslash as '\x5C'
-    elif 32 <= ascii_value <= 126:  # Printable range
-        return chr(ascii_value)
-    else:
-        return f"\\x{ascii_value:02X}"  # Encode non-printable ASCII as '\xNN'
-
-def decode_ascii_text(encoded_text, padding_bits=0):
-    """
-    Decodes an encoded string into a binary representation, removing padding bits.
-
-    Args:
-        encoded_text (str): The encoded text to decode.
-        padding_bits (int): The number of padding bits to remove from the end.
-
-    Returns:
-        str: Decoded binary string with padding removed.
-    """
-    decoded_binary = []
-    i = 0
-
-    while i < len(encoded_text):
-        if encoded_text[i:i+2] == "\\x":  # Encoded non-printable ASCII
-            ascii_value = int(encoded_text[i+2:i+4], 16)  # Convert hex to int
-            decoded_binary.append(f"{ascii_value:08b}")  # Convert to binary
-            i += 4
-        else:  # Printable character
-            ascii_value = ord(encoded_text[i])
-            decoded_binary.append(f"{ascii_value:08b}")  # Convert to binary
-            i += 1
-
-    # Join all binary values into a single binary string
-    binary_string = ''.join(decoded_binary)
-
-    # Remove padding bits from the end
-    padding_bits_str = int(padding_bits)
-    if padding_bits_str > 0:
-        binary_string = binary_string[:-padding_bits_str]
-
-    return binary_string
-
+encoded_data_str_length = len(encoded_data_str)
+packed = pack_bits_into_bytes(encoded_data_str)
 print(len(encoded_data_str))
+encoded_b64 = encode_base64(packed)
+print("Base64 encoded:", encoded_b64)
 buffering = len(encoded_data_str)%8
-for i in range(0,len(encoded_data_str),8):
-   
-    if (len(encoded_data_str)<8) or ((i+8) >= len(encoded_data_str)) :#edge
-        char = encoded_data_str[i:]
-        buffering= 8 - len(char)
-        char += "0"*(buffering)
-        decimal_value = int(char, 2)
-        character = encode_ascii_value(decimal_value)
-        encodede_text += character
-        print(character)
 
-        break
-   
-    if (i + 8) < len(encoded_data_str):#edge
-        #pass
-        char = encoded_data_str[i:i + 8]
-        decimal_value = int(char, 2)
-        character = encode_ascii_value(decimal_value)  
-        #decode_char = decode_ascii_value(character)
-        encodede_text += character
+encoded_text_with_64 =encoded_b64 + "\n"+str(encoded_data_str_length)+"\n"+inorder+"\n"+postorder
 
-encodede_text += "\n"+str(buffering)+"\n"+inorder+"\n"+postorder
 
-print(encodede_text) 
-
-write_to_compressed_file(encodede_text)
+write_to_compressed_file(encoded_text_with_64)
 
 
 
@@ -264,12 +216,12 @@ def recreate_tree(inorder, postorder):
 assembled_tree = recreate_tree(inorder, postorder)
 byiary_tree.print_tree()
 #----------------------------------------------decompress check
-ls = encodede_text.split("\n")
-binary_text = decode_ascii_text(ls[0],buffering)
-print(binary_text)
-print(byiary_tree.encoded_dict)
-real_text = assembled_tree.decode_binary_string(binary_text)
-print(real_text)
+# ls = encodede_text.split("\n")
+# binary_text = decode_ascii_text(ls[0],buffering)
+# print(binary_text)
+# print(byiary_tree.encoded_dict)
+# real_text = assembled_tree.decode_binary_string(binary_text)
+# print(real_text)
 
 # print("---------------------------")
 # assembled_tree.print_tree()
